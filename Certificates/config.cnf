@@ -23,7 +23,8 @@ basicConstraints = CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment
 
 [req_ext]
-certificateTemplateName = ASN1:PRINTABLESTRING:PREZATCA-Code-Signing
+certificateTemplateName = ASN1:PRINTABLESTRING:TSTZATCA-Code-Signing
+
 subjectAltName = dirName:alt_names
 
 [alt_names]

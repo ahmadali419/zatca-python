@@ -2,6 +2,38 @@ import os
 import subprocess
 import base64
 
+def generate_csr_and_privatekey(cert_info, config_file_path):
+    environment_type = cert_info['environmentType']
+
+    # Define Output file paths
+    config_path = 'certificates/config.cnf'
+    private_key_file = 'certificates/PrivateKey.pem'
+    csr_file = 'certificates/taxpayer.csr'
+    public_key_file = 'certificates/PublicKey.pem'
+
+    # Read dynamic data from csr.config
+    data = read_config_file(config_file_path)
+
+    # Generate the config content and write to config.cnf file
+    generate_cnf_content(data, environment_type, config_path)
+
+    # Generate EC private key
+    generate_ec_private_key(private_key_file)
+    
+    # Generate CSR
+    cert_info['csr'] = generate_csr(private_key_file, config_path, csr_file)
+
+    # Generate Public Key
+    generate_public_key(private_key_file, public_key_file)
+
+    # Clean up the private key
+    cert_info['privateKey'] = clean_private_key(private_key_file)
+
+    # Output success message
+    print(f"\nPrivate Key (cleaned), CSR (Base64), and Public Key generated successfully.")
+
+    return cert_info
+
 def read_config_file(file_path):
     config_data = {}
     if not os.path.exists(file_path):
@@ -29,7 +61,17 @@ def read_config_file(file_path):
     }
     return data
 
-def generate_cnf_content(data):
+def generate_cnf_content(data, environment_type, file_path):
+
+    asn_template = "TSTZATCA-Code-Signing"
+
+    if environment_type == 'NonProduction':
+        asn_template = 'TSTZATCA-Code-Signing'
+    elif environment_type == 'Simulation':
+        asn_template = 'PREZATCA-Code-Signing'
+    elif environment_type == 'Production':
+        asn_template = 'ZATCA-Code-Signing'
+
     cnf_content = []
     
     # OID Section
@@ -67,7 +109,7 @@ def generate_cnf_content(data):
     
     # req_ext Section
     cnf_content.append("\n[req_ext]")
-    cnf_content.append("certificateTemplateName = ASN1:PRINTABLESTRING:PREZATCA-Code-Signing")
+    cnf_content.append(f"certificateTemplateName = ASN1:PRINTABLESTRING:{asn_template}\n" )
     cnf_content.append("subjectAltName = dirName:alt_names")
     
     # alt_names Section
@@ -78,9 +120,7 @@ def generate_cnf_content(data):
     cnf_content.append(f"registeredAddress={data['csr']['location_address']}")
     cnf_content.append(f"businessCategory={data['csr']['industry_business_category']}")
     
-    return "\n".join(cnf_content)
-
-def write_to_file(file_path, content):
+    content = "\n".join(cnf_content)
     with open(file_path, 'w') as file:
         file.write(content)
 
@@ -105,6 +145,8 @@ def generate_csr(private_key_file_path, config_path, csr_output_file_path):
     with open(csr_output_file_path, 'w') as csr_file:
         csr_file.write(csr_content_base64)
 
+    return csr_content_base64
+
 def generate_public_key(private_key_file_path, public_key_file_path):
     command = f"openssl ec -in {private_key_file_path} -pubout -conv_form compressed -out {public_key_file_path}"
     execute_command(command)
@@ -114,3 +156,11 @@ def clean_private_key(private_key_file_path):
         private_key_content = file.read()
     
     cleaned_key = ''.join(private_key_content.splitlines()[1:-1])  # Remove header/footer
+    with open(private_key_file_path, 'w') as private_key_file:
+        private_key_file.write(cleaned_key)
+
+    return cleaned_key
+
+
+if __name__ == "__main__":
+    generate_csr_and_privatekey('NonProduction', 'certificates/csr-config-example-EN.properties')
