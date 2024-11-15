@@ -1,3 +1,4 @@
+import base64
 from lxml import etree 
 import uuid
 
@@ -75,3 +76,37 @@ class invoice_helper:
                     parent_node.remove(billing_reference_node)
 
         return new_doc
+    
+    @staticmethod
+    def extract_invoice_hash_and_base64_qr_code(xml_input):
+        if isinstance(xml_input, str):
+            decoded_xml = base64.b64decode(xml_input)
+            if decoded_xml is None:
+                raise ValueError("Invalid Base64 string provided.")
+            xml_input = decoded_xml
+        elif not isinstance(xml_input, (bytes, etree._Element)):
+            raise ValueError("Input must be a string or lxml.etree._Element.")
+
+        # Load XML into an lxml Element
+        if isinstance(xml_input, bytes):
+            doc = etree.fromstring(xml_input)
+        else:
+            doc = xml_input  # Assume it's already an lxml Element
+
+        # Initialize XPath with namespaces
+        namespaces = {
+            'ext': "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2",
+            'ds': "http://www.w3.org/2000/09/xmldsig#",
+            'cbc': "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+            'cac': "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+        }
+
+        # Extract invoiceHash
+        invoice_hash_node = doc.xpath("//ds:Reference[@Id='invoiceSignedData']/ds:DigestValue", namespaces=namespaces)
+        invoice_hash = invoice_hash_node[0].text if invoice_hash_node else None
+
+        # Extract base64QRCode
+        base64_qr_code_node = doc.xpath("//cac:AdditionalDocumentReference[cbc:ID='QR']/cac:Attachment/cbc:EmbeddedDocumentBinaryObject", namespaces=namespaces)
+        base64_qr_code = base64_qr_code_node[0].text if base64_qr_code_node else None
+
+        return invoice_hash, base64_qr_code

@@ -8,37 +8,25 @@ from OpenSSL import crypto
 class qr_code_generator:
 
     @staticmethod
-    def generate_qr_code(canonical_xml, invoice_hash, signature_value, x509_certificate_content):
-        invoice_details = qr_code_generator.get_invoice_details(canonical_xml, invoice_hash, signature_value)
+    def generate_qr_code(canonical_xml, invoice_hash, signature_value, ecdsa_result):
+        invoice_details = qr_code_generator.get_invoice_details(canonical_xml) #, invoice_hash, signature_value)
 
         # Retrieve the InvoiceTypeCode name (from position 8 in array)
-        invoice_type_code_name = invoice_details[8]
-
-        result = qr_code_generator.get_public_key_and_signature(x509_certificate_content)
-        invoice_details[8] = result['public_key']
-        
+        #invoice_type_code_name = invoice_details[8]
+        invoice_details.append(invoice_hash)
+        invoice_details.append(signature_value)
+        #result = qr_code_generator.get_public_key_and_signature(x509_certificate_content)
+        invoice_details.append(ecdsa_result['public_key'])
         # Only add certificateSignature if InvoiceTypeCode name starts with "02"
-        if invoice_type_code_name.startswith("02"):
-            invoice_details.append(result['signature'])
+        #if invoice_type_code_name.startswith("02"):
+        invoice_details.append(ecdsa_result['signature'])
         
         base64_qr_code = qr_code_generator.generate_qr_code_from_values(invoice_details)
-        
-        # Tambahkan hex dump di sini
-        #binary_data = base64.b64decode(base64_qr_code)
-        
-        # Cetak hasil
-        #print("Hasil Dekode QR Code Python:")
-        #print(binary_data.decode('utf-8', errors='ignore'))  # Menggunakan 'ignore' untuk mengabaikan karakter yang tidak dapat didekode
 
-        # Cetak hex dump
-        #hex_dump = " ".join(f"{byte:02x}" for byte in binary_data)
-        #print("Hex Dump QR Code Python:")
-        #print(hex_dump)
-        
         return base64_qr_code
 
     @staticmethod
-    def get_invoice_details(xml, invoice_hash, signature_value):
+    def get_invoice_details(xml): #, invoice_hash, signature_value)
         xml_object = ET.fromstring(xml)
 
         #invoice_type_code = xml_object.find('.//{urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}InvoiceTypeCode').text
@@ -56,10 +44,10 @@ class qr_code_generator:
             company_id,
             issue_date_time,
             payable_amount,
-            tax_amount,
-            invoice_hash,
-            signature_value,
-            invoice_type_code_name
+            tax_amount
+            #invoice_hash,
+            #signature_value,
+            #invoice_type_code_name
         ]
 
     @staticmethod
@@ -72,10 +60,7 @@ class qr_code_generator:
             tlv_data = qr_code_generator.write_tlv(key, value)
             data += tlv_data
             
-            # Debug: Print the TLV data for each key
-            #print(f"Key: {key}, TLV Data: {tlv_data.hex()}")  # Print hex representation
-
-        # Ensure to check if data is empty
+         # Ensure to check if data is empty
         if not data:
             print("No data generated for QR code!")
         

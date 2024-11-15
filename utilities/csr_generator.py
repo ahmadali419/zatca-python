@@ -1,166 +1,98 @@
-import os
-import subprocess
+# csr_generator.py
+from cryptography import x509
+from cryptography.x509.oid import NameOID, ObjectIdentifier
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 import base64
+import os
+import re
 
-def generate_csr_and_privatekey(cert_info, config_file_path):
-    environment_type = cert_info['environmentType']
+class CsrGenerator:
+    def __init__(self, config, environment_type):
+        self.config = config
+        self.environment_type = environment_type
+        self.asn_template = self.get_asn_template()
 
-    # Define Output file paths
-    config_path = 'certificates/config.cnf'
-    private_key_file = 'certificates/PrivateKey.pem'
-    csr_file = 'certificates/taxpayer.csr'
-    public_key_file = 'certificates/PublicKey.pem'
+    def get_asn_template(self):
+        if self.environment_type == 'NonProduction':
+            return 'TSTZATCA-Code-Signing'
+        elif self.environment_type == 'Simulation':
+            return 'PREZATCA-Code-Signing'
+        elif self.environment_type == 'Production':
+            return 'ZATCA-Code-Signing'
+        else:
+            raise ValueError("Invalid environment type specified.")
 
-    # Read dynamic data from csr.config
-    data = read_config_file(config_file_path)
+    def generate_private_key(self):
+        return ec.generate_private_key(ec.SECP256K1(), default_backend())
 
-    # Generate the config content and write to config.cnf file
-    generate_cnf_content(data, environment_type, config_path)
+    def generate_csr(self):
+        private_key = self.generate_private_key()
+        
+        # Build the CSR
+        csr_builder = x509.CertificateSigningRequestBuilder()
+        csr_builder = csr_builder.subject_name(x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, self.config.get('csr.country.name', 'SA')),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, self.config.get('csr.organization.unit.name', '')),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, self.config.get('csr.organization.name', '')),
+            x509.NameAttribute(NameOID.COMMON_NAME, self.config.get('csr.common.name', ''))
+        ]))
+        
+        # Add ASN.1 extension
+        csr_builder = csr_builder.add_extension(
+            x509.UnrecognizedExtension(
+                ObjectIdentifier("1.3.6.1.4.1.311.20.2"), 
+                self.asn_template.encode()
+            ),
+            critical=False
+        )
+        
+        # Add SAN extension
+        csr_builder = csr_builder.add_extension(
+            x509.SubjectAlternativeName([
+                x509.DirectoryName(x509.Name([
+                    x509.NameAttribute(ObjectIdentifier("2.5.4.4"), self.config.get('csr.serial.number', '')),
+                    x509.NameAttribute(ObjectIdentifier("0.9.2342.19200300.100.1.1"), self.config.get('csr.organization.identifier', '')),
+                    x509.NameAttribute(ObjectIdentifier("2.5.4.12"), self.config.get('csr.invoice.type', '')),
+                    x509.NameAttribute(ObjectIdentifier("2.5.4.26"), self.config.get('csr.location.address', '')),
+                    x509.NameAttribute(ObjectIdentifier("2.5.4.15"), self.config.get('csr.industry.business.category', ''))
+                ]))
+            ]),
+            critical=False
+        )
 
-    # Generate EC private key
-    generate_ec_private_key(private_key_file)
-    
-    # Generate CSR
-    cert_info['csr'] = generate_csr(private_key_file, config_path, csr_file)
+        # Sign the CSR with the private key
+        csr = csr_builder.sign(private_key, hashes.SHA256(), default_backend())
 
-    # Generate Public Key
-    generate_public_key(private_key_file, public_key_file)
+        # Serialize private key and CSR
+        private_key_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        csr_pem = csr.public_bytes(serialization.Encoding.PEM)
 
-    # Clean up the private key
-    cert_info['privateKey'] = clean_private_key(private_key_file)
+        # Strip header/footer from private key
+        private_key_content = re.sub(
+            r'-----BEGIN .* PRIVATE KEY-----|-----END .* PRIVATE KEY-----|\n', '', 
+            private_key_pem.decode('utf-8')
+        )
 
-    # Output success message
-    print(f"\nPrivate Key (cleaned), CSR (Base64), and Public Key generated successfully.")
+        # Encode CSR in Base64
+        csr_base64 = base64.b64encode(csr_pem).decode('utf-8')
 
-    return cert_info
+        return private_key_content, csr_base64
 
-def read_config_file(file_path):
-    config_data = {}
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Config file not found: {file_path}")
-    
-    with open(file_path, 'r') as file:
-        for line in file:
-            if '=' in line:
-                key, value = line.split('=', 1)
-                config_data[key.strip()] = value.strip()
-
-    # Organize data into the structure expected by the generateCnfContent function
-    data = {
-        'csr': {
-            'common_name': config_data['csr.common.name'],
-            'serial_number': config_data['csr.serial.number'],
-            'organization_identifier': config_data['csr.organization.identifier'],
-            'organization_unit_name': config_data['csr.organization.unit.name'],
-            'organization_name': config_data['csr.organization.name'],
-            'country_name': config_data['csr.country.name'],
-            'invoice_type': config_data['csr.invoice.type'],
-            'location_address': config_data['csr.location.address'],
-            'industry_business_category': config_data['csr.industry.business.category']
-        }
-    }
-    return data
-
-def generate_cnf_content(data, environment_type, file_path):
-
-    asn_template = "TSTZATCA-Code-Signing"
-
-    if environment_type == 'NonProduction':
-        asn_template = 'TSTZATCA-Code-Signing'
-    elif environment_type == 'Simulation':
-        asn_template = 'PREZATCA-Code-Signing'
-    elif environment_type == 'Production':
-        asn_template = 'ZATCA-Code-Signing'
-
-    cnf_content = []
-    
-    # OID Section
-    cnf_content.append("oid_section = OIDs")
-    cnf_content.append("[OIDs]")
-    cnf_content.append("certificateTemplateName=1.3.6.1.4.1.1311.20.2\n")
-    
-    # req Section
-    cnf_content.append("[req]")
-    cnf_content.append("default_bits = 2048")
-    cnf_content.append("emailAddress = email@email.com")
-    cnf_content.append("req_extensions = v3_req")
-    cnf_content.append("x509_extensions = v3_ca")
-    cnf_content.append("prompt = no")
-    cnf_content.append("default_md = sha256")
-    cnf_content.append("req_extensions = req_ext")
-    cnf_content.append("distinguished_name = dn\n")
-    
-    # dn Section
-    cnf_content.append("[dn]")
-    for key, value in data['csr'].items():
-        if key == 'common_name':
-            cnf_content.append(f"CN={value}")
-        elif key == 'country_name':
-            cnf_content.append(f"C={value}")
-        elif key == 'organization_unit_name':
-            cnf_content.append(f"OU={value}")
-        elif key == 'organization_name':
-            cnf_content.append(f"O={value}")
-    
-    # v3_req Section
-    cnf_content.append("\n[v3_req]")
-    cnf_content.append("basicConstraints = CA:FALSE")
-    cnf_content.append("keyUsage = digitalSignature, nonRepudiation, keyEncipherment")
-    
-    # req_ext Section
-    cnf_content.append("\n[req_ext]")
-    cnf_content.append(f"certificateTemplateName = ASN1:PRINTABLESTRING:{asn_template}\n" )
-    cnf_content.append("subjectAltName = dirName:alt_names")
-    
-    # alt_names Section
-    cnf_content.append("\n[alt_names]")
-    cnf_content.append(f"SN={data['csr']['serial_number']}")
-    cnf_content.append(f"UID={data['csr']['organization_identifier']}")
-    cnf_content.append(f"title={data['csr']['invoice_type']}")
-    cnf_content.append(f"registeredAddress={data['csr']['location_address']}")
-    cnf_content.append(f"businessCategory={data['csr']['industry_business_category']}")
-    
-    content = "\n".join(cnf_content)
-    with open(file_path, 'w') as file:
-        file.write(content)
-
-def execute_command(command):
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"Command failed: {result.stderr.strip()}")
-
-def generate_ec_private_key(output_file_path):
-    command = f"openssl ecparam -name secp256k1 -genkey -noout -out {output_file_path}"
-    execute_command(command)
-
-def generate_csr(private_key_file_path, config_path, csr_output_file_path):
-    command = f"openssl req -new -sha256 -key {private_key_file_path} -config {config_path} -out {csr_output_file_path}"
-    execute_command(command)
-
-    with open(csr_output_file_path, 'rb') as csr_file:
-        csr_content = csr_file.read()
-    
-    # Encode CSR content in Base64
-    csr_content_base64 = base64.b64encode(csr_content).decode('utf-8')
-    with open(csr_output_file_path, 'w') as csr_file:
-        csr_file.write(csr_content_base64)
-
-    return csr_content_base64
-
-def generate_public_key(private_key_file_path, public_key_file_path):
-    command = f"openssl ec -in {private_key_file_path} -pubout -conv_form compressed -out {public_key_file_path}"
-    execute_command(command)
-
-def clean_private_key(private_key_file_path):
-    with open(private_key_file_path, 'r') as file:
-        private_key_content = file.read()
-    
-    cleaned_key = ''.join(private_key_content.splitlines()[1:-1])  # Remove header/footer
-    with open(private_key_file_path, 'w') as private_key_file:
-        private_key_file.write(cleaned_key)
-
-    return cleaned_key
-
-
-if __name__ == "__main__":
-    generate_csr_and_privatekey('NonProduction', 'certificates/csr-config-example-EN.properties')
+    def save_to_files(self, private_key_pem, csr_pem):
+        os.makedirs("certificates", exist_ok=True)
+        private_key_file = 'certificates/PrivateKey.pem'
+        csr_file = 'certificates/taxpayer.csr'
+        
+        with open(private_key_file, "wb") as key_file:
+            key_file.write(private_key_pem)
+        
+        with open(csr_file, "wb") as csr_file:
+            csr_file.write(csr_pem)
+        
+        print(f"\nPrivate key and CSR have been saved to {private_key_file} and {csr_file}, respectively.")

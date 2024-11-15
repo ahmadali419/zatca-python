@@ -2,18 +2,34 @@ import json
 import base64
 import time
 from utilities.api_helper import api_helper
-from utilities.csr_generator import generate_csr_and_privatekey
+from utilities.csr_generator_cli import generate_csr_and_privatekey
+from utilities.csr_generator import CsrGenerator
 from utilities.invoice_helper import invoice_helper
 from utilities.einvoice_signer import einvoice_signer
 from lxml import etree 
 
 def main():
+    
+    print("\nPYTHON CODE ONBOARDING\n")
 
     # Define Variable
     environment_type = 'NonProduction'
     OTP = '123456'  # For Simulation and Production Get OTP from fatooraPortal
 
-    config_file_path = 'certificates/csr-config-example-EN.properties'
+    csr_config = {
+    "csr.common.name": "TST-886431145-399999999900003",
+    "csr.serial.number": "1-TST|2-TST|3-ed22f1d8-e6a2-1118-9b58-d9a8f11e445f",
+    "csr.organization.identifier": "399999999900003",
+    "csr.organization.unit.name": "Riyadh Branch",
+    "csr.organization.name": "Maximum Speed Tech Supply LTD",
+    "csr.country.name": "SA",
+    "csr.invoice.type": "1100",
+    "csr.location.address": "RRRD2929",
+    "csr.industry.business.category": "Supply activities"
+    }
+
+    #config_file_path = 'certificates/csr-config-example-EN.properties'
+
     api_path = 'developer-portal'  # Default value
 
     # Determine API path based on environment type
@@ -49,7 +65,19 @@ def main():
     print("\n1. Generate CSR and PrivateKey\n")
 
     #Generate CSR & Private Key
-    cert_info = generate_csr_and_privatekey(cert_info, config_file_path)
+    cert_info = generate_csr_and_privatekey(cert_info, "certificates\csr-config-example-EN.properties")
+    exit
+    csr_gen = CsrGenerator(csr_config, environment_type)
+    private_key_content, csr_base64 = csr_gen.generate_csr()
+
+    print("\nPrivate Key (without header and footer):")
+    print(private_key_content)
+    print("\nBase64 Encoded CSR:")
+    print(csr_base64)
+
+    cert_info["csr"] = csr_base64
+    cert_info["privateKey"] = private_key_content
+
     api_helper.save_json_to_file("certificates/certificateInfo.json", cert_info)
 
     # 2. Get Compliance CSID
@@ -78,7 +106,7 @@ def main():
     print("\n3: Sending Sample Documents\n")
 
     cert_info = api_helper.load_json_from_file("certificates/certificateInfo.json")
-    xml_template_path = "Resources/Invoice.xml"
+    xml_template_path = "templates\invoice.xml"
 
     private_key = cert_info["privateKey"]
     x509_certificate_content = base64.b64decode(cert_info["ccsid_binarySecurityToken"]).decode('utf-8')
@@ -113,7 +141,7 @@ def main():
             pih,
             instruction_note
         )
-
+        
         json_payload = einvoice_signer.get_request_api(new_doc, x509_certificate_content, private_key)
         
         #print(json_payload)
@@ -146,7 +174,7 @@ def main():
             print(f"Failed to process {description}: status is {status}\n")
             exit(1)
 
-        time.sleep(0.2)  # 200 ms delay
+        #time.sleep(1)  
 
     # 4. Get Production CSID
     
@@ -167,10 +195,10 @@ def main():
 
         api_helper.save_json_to_file("certificates/certificateInfo.json", cert_info)
 
-        print(f"complianceCSID Server Response: \n{clean_response}")
+        print(f"Production CSID Server Response: \n{clean_response}")
 
     except json.JSONDecodeError:
-        print(f"complianceCSID Server Response: \n{clean_response}")
+        print(f"Production CSID Server Response: \n{clean_response}")
 
 
 if __name__ == "__main__":

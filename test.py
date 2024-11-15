@@ -1,4 +1,4 @@
-from _qr_code_generator import qr_code_generator
+from utilities.qr_code_generator import qr_code_generator
 
 # Sample XML for testing
 

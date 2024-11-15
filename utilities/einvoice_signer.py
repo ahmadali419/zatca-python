@@ -1,6 +1,9 @@
 import base64
 import hashlib
 import json
+import os
+import re
+import tempfile
 from lxml import etree
 from datetime import datetime
 from cryptography import x509
@@ -11,95 +14,216 @@ from OpenSSL import crypto
 from utilities.qr_code_generator import qr_code_generator
 
 class einvoice_signer:
-    
+    @staticmethod
+    def pretty_print_xml(xml):
+        """Pretty print the XML."""
+        # Convert the XML to a string and then parse it again to pretty print
+        xml_string = etree.tostring(xml, pretty_print=True, encoding='UTF-8').decode('UTF-8')
+        return etree.fromstring(xml_string)
+
+    # @staticmethod
+    # def get_request_api_from_file(xml_file_path, x509_certificate_content, private_key_content):
+    #     # Open XML document with preserveWhiteSpace = true
+    #     parser = etree.XMLParser(remove_blank_text=False)
+    #     xml = etree.parse(xml_file_path, parser)
+    #     return einvoice_signer.get_request_api(xml, x509_certificate_content, private_key_content)
     @staticmethod
     def get_request_api_from_file(xml_file_path, x509_certificate_content, private_key_content):
         # Open XML document with preserveWhiteSpace = true
         parser = etree.XMLParser(remove_blank_text=False)
         xml = etree.parse(xml_file_path, parser)
+        
+        # Pretty print the XML before transformation
+        xml = einvoice_signer.pretty_print_xml(xml)
+        
         return einvoice_signer.get_request_api(xml, x509_certificate_content, private_key_content)
+
+    # @staticmethod
+    # def get_request_api(xml, x509_certificate_content, private_key_content):
+    #     """Main function to process the invoice request."""
+    #     # Define resource file paths
+    #     resource_paths = {
+    #         "xsl_file": 'resources/xslfile.xsl',
+    #         "ubl_template": 'resources/zatca_ubl.xml',
+    #         "signature": 'resources/zatca_signature.xml'
+    #     }
+
+    #     xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
+        
+    #     # Extract UUID from XML
+    #     uuid = einvoice_signer.extract_uuid(xml)
+
+    #     # Determine if the invoice is simplified
+    #     is_simplified_invoice = einvoice_signer.is_simplified_invoice(xml)
+
+    #     # Transform the XML using XSLT
+    #     transformed_xml = einvoice_signer.transform_xml(xml, resource_paths["xsl_file"])
+
+    #     # Canonicalize the transformed XML
+    #     canonical_xml = einvoice_signer.canonicalize_xml(transformed_xml)
+
+    #     # Generate the hash and encode the invoice
+    #     base64_hash = einvoice_signer.generate_base64_hash(canonical_xml)
+    #     base64_invoice = einvoice_signer.encode_invoice(xml_declaration, canonical_xml)
+
+    #     # Prepare the result for non-simplified invoices
+    #     if not is_simplified_invoice:
+    #         return einvoice_signer.create_result(uuid, base64_hash, base64_invoice)
+
+    #     # Sign the simplified invoice
+    #     return einvoice_signer.sign_simplified_invoice(canonical_xml, base64_hash, x509_certificate_content, private_key_content, resource_paths["ubl_template"], resource_paths["signature"], uuid)
 
     @staticmethod
     def get_request_api(xml, x509_certificate_content, private_key_content):
-        # Resource files
-        xsl_file_path = 'resources/xslfile.xsl'
-        ubl_template_path = 'resources/zatca_ubl.xml'
-        signature_path = 'resources/zatca_signature.xml'
-        xml_declaration = '<?xml version="1.0" encoding="utf-8"?>'
+        """Main function to process the invoice request."""
+        # Define resource file paths
+        resource_paths = {
+            "xsl_file": 'resources/xslfile.xsl',
+            "ubl_template": 'resources/zatca_ubl.xml',
+            "signature": 'resources/zatca_signature.xml'
+        }
 
-        # Get UUID from element <cbc:UUID>
+        xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
+        
+        # Extract UUID from XML
+        uuid = einvoice_signer.extract_uuid(xml)
+
+        # Determine if the invoice is simplified
+        is_simplified_invoice = einvoice_signer.is_simplified_invoice(xml)
+
+        # Transform the XML using XSLT
+        transformed_xml = einvoice_signer.transform_xml(xml, resource_paths["xsl_file"])
+
+        # Canonicalize the transformed XML
+        canonical_xml = einvoice_signer.canonicalize_xml(transformed_xml)
+        #print (canonical_xml)
+
+        # Generate the hash and encode the invoice
+        base64_hash = einvoice_signer.generate_base64_hash(canonical_xml)
+        base64_invoice = einvoice_signer.encode_invoice(xml_declaration, canonical_xml)
+
+        # Prepare the result for non-simplified invoices
+        if not is_simplified_invoice:
+            return einvoice_signer.create_result(uuid, base64_hash, base64_invoice)
+
+        # Sign the simplified invoice
+        return einvoice_signer.sign_simplified_invoice(canonical_xml, base64_hash, x509_certificate_content, private_key_content, resource_paths["ubl_template"], resource_paths["signature"], uuid)
+
+    @staticmethod
+    def extract_uuid(xml):
+        """Extract UUID from the XML document."""
         uuid_nodes = xml.xpath('//cbc:UUID', namespaces={'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2'})
-        if len(uuid_nodes) == 0:
+        if not uuid_nodes:
             raise Exception("UUID not found in the XML document.")
-        uuid = uuid_nodes[0].text
+        return uuid_nodes[0].text
 
-        # Check if it is a simplified invoice
-        is_simplified_invoice = False
+    @staticmethod
+    def is_simplified_invoice(xml):
+        """Check if the invoice is a simplified invoice."""
         invoice_type_code_nodes = xml.xpath('//cbc:InvoiceTypeCode', namespaces={'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2'})
-        if len(invoice_type_code_nodes) > 0:
+        if invoice_type_code_nodes:
             name_attribute = invoice_type_code_nodes[0].get('name')
-            is_simplified_invoice = name_attribute.startswith("02")
+            return name_attribute.startswith("02")
+        return False
 
-        # Apply XSL transform
+    @staticmethod
+    def transform_xml(xml, xsl_file_path):
+        """Apply XSL transformation to the XML."""
         xsl = etree.parse(xsl_file_path)
         transform = etree.XSLT(xsl)
         transformed_xml = transform(xml)
         if transformed_xml is None:
             raise Exception("XSL Transformation failed.")
+        return transformed_xml
 
-        # Canonicalize (C14N) transformed document
-        canonical_xml = etree.tostring(transformed_xml, method='c14n').decode()
+    @staticmethod
+    def canonicalize_xml(transformed_xml):
+        """Canonicalize the transformed XML."""
+        return etree.tostring(transformed_xml, method='c14n').decode('utf-8')
 
-        # Get byte hash256 from transformed document
-        hash = hashlib.sha256(canonical_xml.encode('utf-8')).digest()
+    @staticmethod
+    def generate_base64_hash(canonical_xml):
+        """Generate a Base64-encoded hash of the canonical XML."""
+        hash_bytes = hashlib.sha256(canonical_xml.encode('utf-8')).digest()
+        return base64.b64encode(hash_bytes).decode()
 
-        # Encode hash to Base64
-        base64_hash = base64.b64encode(hash).decode()
+    @staticmethod
+    def encode_invoice(xml_declaration, canonical_xml):
+        """Encode the invoice as Base64."""
+        updated_xml = f"{xml_declaration}\n{canonical_xml}"
+        return base64.b64encode(updated_xml.encode('utf-8')).decode('utf-8')
 
-        # Encode canonicalized XML to Base64
-        base64_invoice = base64.b64encode((xml_declaration + "\n" + canonical_xml).encode('utf-8')).decode()
+    @staticmethod
+    def create_result(uuid, base64_hash, base64_invoice):
+        """Create the result dictionary."""
+        return json.dumps({
+            "invoiceHash": base64_hash,
+            "uuid": uuid,
+            "invoice": base64_invoice
+        })
 
-        # Return early for non-simplified invoices
-        if not is_simplified_invoice:
-            result = {
-                "invoiceHash": base64_hash,
-                "uuid": uuid,
-                "invoice": base64_invoice
-            }
-            return json.dumps(result)
-
-        # Sign the simplified invoice
-        return einvoice_signer.sign_simplified_invoice(canonical_xml, base64_hash, x509_certificate_content, private_key_content, ubl_template_path, signature_path, uuid)
-
-    
     @staticmethod
     def sign_simplified_invoice(canonical_xml, base64_hash, x509_certificate_content, private_key_content, ubl_template_path, signature_path, uuid):
-        xml_declaration = f'<?xml version="1.0" encoding="utf-8"?>\n'
-        # Signing Simplified Invoice Document
+        """Sign the simplified invoice and return the signed invoice."""
         signature_timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        
-        # Wrap the certificate content with PEM headers and footers
-        pem_certificate = "-----BEGIN CERTIFICATE-----\n" + \
-                          "\n".join([x509_certificate_content[i:i+64] for i in range(0, len(x509_certificate_content), 64)]) + \
-                          "\n-----END CERTIFICATE-----"
 
-        # Decode the X.509 certificate
-        certificate_bytes = base64.b64decode(x509_certificate_content)
-
-        # Generate public key hashing from the decoded certificate
-        hash_bytes = hashlib.sha256(certificate_bytes).digest()
-        public_key_hashing = base64.b64encode(hash_bytes).decode()
+        # Generate public key hashing
+        public_key_hashing = einvoice_signer.generate_public_key_hashing(x509_certificate_content)
 
         # Parse the X.509 certificate
+        pem_certificate = einvoice_signer.wrap_certificate(x509_certificate_content)
         certificate = x509.load_pem_x509_certificate(pem_certificate.encode(), default_backend())
 
         # Extract certificate information
         issuer_name = einvoice_signer.get_issuer_name(certificate)
-        serial_number = einvoice_signer.get_serial_number(certificate)
+        serial_number = certificate.serial_number 
         signed_properties_hash = einvoice_signer.get_signed_properties_hash(signature_timestamp, public_key_hashing, issuer_name, serial_number)
         signature_value = einvoice_signer.get_digital_signature(base64_hash, private_key_content)
 
-        # Populate UBLExtension Template
+        # Generate the ECDSA result
+        ecdsa_result = einvoice_signer.get_public_key_and_signature(x509_certificate_content)
+
+        # Populate UBL Template
+        ubl_content = einvoice_signer.populate_ubl_template(ubl_template_path, base64_hash, signed_properties_hash, signature_value, x509_certificate_content, signature_timestamp, public_key_hashing, issuer_name, serial_number)
+
+        # Insert UBL into XML
+        updated_xml_string = einvoice_signer.insert_ubl_into_xml(canonical_xml, ubl_content)
+
+        # Generate QR Code, now including ecdsa_result
+        qr_code = qr_code_generator.generate_qr_code(canonical_xml, base64_hash, signature_value, ecdsa_result)
+
+        # Load and insert signature content
+        updated_xml_string = einvoice_signer.insert_signature_into_xml(updated_xml_string, signature_path, qr_code)
+
+           # Encode the final invoice
+        base64_invoice = einvoice_signer.encode_invoice('<?xml version="1.0" encoding="UTF-8"?>\n', updated_xml_string)
+
+        # Create the result dictionary
+        return json.dumps({
+            "invoiceHash": base64_hash,
+            "uuid": uuid,
+            "invoice": base64_invoice,
+        })
+
+    @staticmethod
+    def wrap_certificate(x509_certificate_content):
+        """Wrap the certificate content with PEM headers and footers."""
+        return "-----BEGIN CERTIFICATE-----\n" + \
+               "\n".join([x509_certificate_content[i:i + 64] for i in range(0, len(x509_certificate_content), 64)]) + \
+               "\n-----END CERTIFICATE-----"
+
+    @staticmethod
+    def generate_public_key_hashing(x509_certificate_content):
+        """Generate public key hashing from the X.509 certificate content."""
+        # Generate the SHA256 hash of the x509_certificate_content string in binary format
+        hash_bytes = hashlib.sha256(x509_certificate_content.encode('utf-8')).digest()
+        # Convert the hash to hex and then base64 encode the result
+        hash_hex = hash_bytes.hex()
+        return base64.b64encode(hash_hex.encode('utf-8')).decode('utf-8')
+
+    @staticmethod
+    def populate_ubl_template(ubl_template_path, base64_hash, signed_properties_hash, signature_value, x509_certificate_content, signature_timestamp, public_key_hashing, issuer_name, serial_number):
+        """Populate the UBL template with necessary values."""
         with open(ubl_template_path, 'r') as ubl_file:
             ubl_content = ubl_file.read()
             ubl_content = ubl_content.replace("INVOICE_HASH", base64_hash)
@@ -111,16 +235,17 @@ class einvoice_signer:
             ubl_content = ubl_content.replace("ISSUER_NAME", issuer_name)
             ubl_content = ubl_content.replace("SERIAL_NUMBER", str(serial_number))
 
-        #print(ubl_content)
+        return ubl_content
 
-        # Insert UBL into XML
+    @staticmethod
+    def insert_ubl_into_xml(canonical_xml, ubl_content):
+        """Insert UBL content into the canonical XML."""
         insert_position = canonical_xml.find('>') + 1  # Find position after the first '>'
-        updated_xml_string = canonical_xml[:insert_position] + ubl_content + canonical_xml[insert_position:]
+        return canonical_xml[:insert_position] + ubl_content + canonical_xml[insert_position:]
 
-        # Generate QR Code (Assuming qr_code_generator is defined elsewhere)
-        qr_code = qr_code_generator.generate_qr_code(canonical_xml, base64_hash, signature_value, x509_certificate_content)
-
-        # Load signature template content
+    @staticmethod
+    def insert_signature_into_xml(updated_xml_string, signature_path, qr_code):
+        """Insert the signature content into the XML."""
         with open(signature_path, 'r') as signature_file:
             signature_content = signature_file.read()
             signature_content = signature_content.replace("BASE64_QRCODE", qr_code)
@@ -128,22 +253,10 @@ class einvoice_signer:
         # Insert signature string before <cac:AccountingSupplierParty>
         insert_position_signature = updated_xml_string.find('<cac:AccountingSupplierParty>')
         if insert_position_signature != -1:
-            updated_xml_string = updated_xml_string[:insert_position_signature] + signature_content + updated_xml_string[insert_position_signature:]
+            return updated_xml_string[:insert_position_signature] + signature_content + updated_xml_string[insert_position_signature:]
         else:
             raise Exception("The <cac:AccountingSupplierParty> tag was not found in the XML.")
-
-        base64_invoice = base64.b64encode((xml_declaration + updated_xml_string).encode()).decode()
-
-        # Generate Array Result
-        result = {
-            "invoiceHash": base64_hash,
-            "uuid": uuid,
-            "invoice": base64_invoice,
-        }
-
-        # Convert Array to JSON string
-        return json.dumps(result)
-
+        
     @staticmethod
     def get_issuer_name(certificate):
         issuer = certificate.issuer
@@ -160,9 +273,6 @@ class einvoice_signer:
                     issuer_dict[key] = [issuer_dict[key], attr.value]
             else:
                 issuer_dict[key] = attr.value
-
-        # Debug: Print the issuer_dict to see all key-value pairs
-        # print("Issuer Dictionary:", issuer_dict)
 
         # Check for 'CN' and add to the issuer name parts
         if 'commonName' in issuer_dict:
@@ -184,37 +294,37 @@ class einvoice_signer:
         return ", ".join(issuer_name_parts)
 
     @staticmethod
-    def get_serial_number(certificate):
-        return certificate.serial_number
-
-    @staticmethod
     def get_signed_properties_hash(signing_time, digest_value, x509_issuer_name, x509_serial_number):
-    # Construct the XML string with exact formatting
+    # Construct the XML string with exactly 36 spaces in front of <xades:SignedSignatureProperties>
         xml_string = (
             '<xades:SignedProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Id="xadesSignedProperties">\n'
             '                                    <xades:SignedSignatureProperties>\n'
-            '                                        <xades:SigningTime>{}</xades:SigningTime>\n'
+            '                                        <xades:SigningTime>{}</xades:SigningTime>\n'.format(signing_time) +
             '                                        <xades:SigningCertificate>\n'
             '                                            <xades:Cert>\n'
             '                                                <xades:CertDigest>\n'
             '                                                    <ds:DigestMethod xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>\n'
-            '                                                    <ds:DigestValue xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{}</ds:DigestValue>\n'
+            '                                                    <ds:DigestValue xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{}</ds:DigestValue>\n'.format(digest_value) +
             '                                                </xades:CertDigest>\n'
             '                                                <xades:IssuerSerial>\n'
-            '                                                    <ds:X509IssuerName xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{}</ds:X509IssuerName>\n'
-            '                                                    <ds:X509SerialNumber xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{}</ds:X509SerialNumber>\n'
+            '                                                    <ds:X509IssuerName xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{}</ds:X509IssuerName>\n'.format(x509_issuer_name) +
+            '                                                    <ds:X509SerialNumber xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{}</ds:X509SerialNumber>\n'.format(x509_serial_number) +
             '                                                </xades:IssuerSerial>\n'
             '                                            </xades:Cert>\n'
             '                                        </xades:SigningCertificate>\n'
             '                                    </xades:SignedSignatureProperties>\n'
-            '</xades:SignedProperties>'
-        ).format(signing_time, digest_value, x509_issuer_name, x509_serial_number)
+            '                                </xades:SignedProperties>'
+        )
 
-        # Compute the SHA-256 hash
-        hash_bytes = hashlib.sha256(xml_string.encode()).digest()
-    
-        # Return the Base64 encoded hash
-        return base64.b64encode(hash_bytes).decode()
+        # Clean up the XML string (normalize newlines and trim extra spaces)
+        xml_string = xml_string.replace("\r\n", "\n").strip()
+
+        # Generate the SHA256 hash of the XML string in binary format
+        hash_bytes = hashlib.sha256(xml_string.encode('utf-8')).digest()
+
+        # Convert the hash to hex and then base64 encode the result
+        hash_hex = hash_bytes.hex()
+        return base64.b64encode(hash_hex.encode('utf-8')).decode('utf-8')
 
 
     @staticmethod
@@ -236,3 +346,45 @@ class einvoice_signer:
             return base64.b64encode(signature).decode()
         except Exception as e:
             raise Exception(f"Failed to process signature: {e}")
+        
+    @staticmethod
+    def get_public_key_and_signature(certificate_base64):
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.pem') as temp_file:
+                cert_content = "-----BEGIN CERTIFICATE-----\n"
+                cert_content += "\n".join([certificate_base64[i:i+64] for i in range(0, len(certificate_base64), 64)])
+                cert_content += "\n-----END CERTIFICATE-----\n"
+                temp_file.write(cert_content)
+                temp_file_path = temp_file.name
+
+            with open(temp_file_path, 'r') as f:
+                cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+
+            pub_key = crypto.dump_publickey(crypto.FILETYPE_ASN1, cert.get_pubkey())
+            pub_key_details = crypto.load_publickey(crypto.FILETYPE_ASN1, pub_key).to_cryptography_key().public_numbers()
+
+            x = pub_key_details.x.to_bytes(32, byteorder='big').rjust(32, b'\0')
+            y = pub_key_details.y.to_bytes(32, byteorder='big').rjust(32, b'\0')
+
+            public_key_der = b'\x30\x56\x30\x10\x06\x07\x2A\x86\x48\xCE\x3D\x02\x01\x06\x05\x2B\x81\x04\x00\x0A\x03\x42\x00\x04' + x + y
+
+            cert_pem = open(temp_file_path, 'r').read()
+            matches = re.search(r'-----BEGIN CERTIFICATE-----(.+)-----END CERTIFICATE-----', cert_pem, re.DOTALL)
+            if not matches:
+                raise Exception("Error extracting DER data from certificate.")
+            
+            der_data = base64.b64decode(matches.group(1).replace('\n', ''))
+            sequence_pos = der_data.rfind(b'\x30', -72)
+            signature = der_data[sequence_pos:]
+
+            return {
+                'public_key': public_key_der,
+                'signature': signature
+            }
+        except Exception as e:
+            raise Exception("[Error] Failed to process certificate: " + str(e))
+        finally:
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+    
+
