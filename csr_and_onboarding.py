@@ -1,8 +1,6 @@
 import json
 import base64
-import time
 from utilities.api_helper import api_helper
-from utilities.csr_generator_cli import generate_csr_and_privatekey
 from utilities.csr_generator import CsrGenerator
 from utilities.invoice_helper import invoice_helper
 from utilities.einvoice_signer import einvoice_signer
@@ -65,8 +63,6 @@ def main():
     print("\n1. Generate CSR and PrivateKey\n")
 
     #Generate CSR & Private Key
-    cert_info = generate_csr_and_privatekey(cert_info, "certificates\csr-config-example-EN.properties")
-    exit
     csr_gen = CsrGenerator(csr_config, environment_type)
     private_key_content, csr_base64 = csr_gen.generate_csr()
 
