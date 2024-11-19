@@ -7,7 +7,7 @@ from utilities.einvoice_signer import einvoice_signer
 from lxml import etree 
 
 def main():
-    print("\n3: Sending Sample Documents\n")
+    print("\n3: Clearance & Reporting Documents\n")
 
     cert_info = api_helper.load_json_from_file("certificates/certificateInfo.json")
     xml_template_path = "templates\invoice.xml"
