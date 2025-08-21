@@ -10,7 +10,7 @@ def main():
     print("\n3: Clearance & Reporting Documents\n")
 
     cert_info = api_helper.load_json_from_file("certificates/certificateInfo.json")
-    xml_template_path = "templates\invoice.xml"
+    xml_template_path = "templates\invoices.xml"
 
     private_key = cert_info["privateKey"]
     x509_certificate_content = base64.b64decode(cert_info["pcsid_binarySecurityToken"]).decode('utf-8')
@@ -18,12 +18,12 @@ def main():
     parser = etree.XMLParser(remove_blank_text=False)
     base_document = etree.parse(xml_template_path, parser)
     document_types = [
-        ["STDSI", "388", "Standard Invoice", ""],
-        ["STDCN", "383", "Standard CreditNote", "InstructionNotes for Standard CreditNote"],
-        ["STDDN", "381", "Standard DebitNote", "InstructionNotes for Standard DebitNote"],
+        # ["STDSI", "388", "Standard Invoice", ""],
+        # ["STDCN", "383", "Standard CreditNote", "InstructionNotes for Standard CreditNote"],
+        # ["STDDN", "381", "Standard DebitNote", "InstructionNotes for Standard DebitNote"],
         ["SIMSI", "388", "Simplified Invoice", ""],
-        ["SIMCN", "383", "Simplified CreditNote", "InstructionNotes for Simplified CreditNote"],
-        ["SIMDN", "381", "Simplified DebitNote", "InstructionNotes for Simplified DebitNote"]
+        # ["SIMCN", "383", "Simplified CreditNote", "InstructionNotes for Simplified CreditNote"],
+        # ["SIMDN", "381", "Simplified DebitNote", "InstructionNotes for Simplified DebitNote"]
     ]
 
     icv = 0
@@ -48,7 +48,7 @@ def main():
         
         json_payload = einvoice_signer.get_request_api(new_doc, x509_certificate_content, private_key)
         
-        #print(json_payload)
+        print(json_payload)
 
         
         if einvoice_signer.is_simplified_invoice(new_doc):

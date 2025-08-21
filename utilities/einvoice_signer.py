@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 from OpenSSL import crypto
 from utilities.qr_code_generator import qr_code_generator
+from cryptography.hazmat.primitives.asymmetric import ec
 
 class einvoice_signer:
     @staticmethod
@@ -171,7 +172,9 @@ class einvoice_signer:
         public_key_hashing = einvoice_signer.generate_public_key_hashing(x509_certificate_content)
 
         # Parse the X.509 certificate
+        print("certificate ",x509_certificate_content)
         pem_certificate = einvoice_signer.wrap_certificate(x509_certificate_content)
+        print("pem ",pem_certificate)
         certificate = x509.load_pem_x509_certificate(pem_certificate.encode(), default_backend())
 
         # Extract certificate information
@@ -206,11 +209,15 @@ class einvoice_signer:
         })
 
     @staticmethod
-    def wrap_certificate(x509_certificate_content):
-        """Wrap the certificate content with PEM headers and footers."""
-        return "-----BEGIN CERTIFICATE-----\n" + \
-               "\n".join([x509_certificate_content[i:i + 64] for i in range(0, len(x509_certificate_content), 64)]) + \
-               "\n-----END CERTIFICATE-----"
+    def wrap_certificate(cert_content: str) -> str:
+        cert_content = cert_content.strip()
+        if not cert_content.startswith("-----BEGIN CERTIFICATE-----"):
+            cert_content = (
+                "-----BEGIN CERTIFICATE-----\n"
+                + "\n".join(cert_content[i:i+64] for i in range(0, len(cert_content), 64))
+                + "\n-----END CERTIFICATE-----"
+            )
+        return cert_content
 
     @staticmethod
     def generate_public_key_hashing(x509_certificate_content):
@@ -333,16 +340,22 @@ class einvoice_signer:
             hash_bytes = base64.b64decode(xml_hashing)
             if hash_bytes is None:
                 raise Exception("Failed to decode the base64-encoded XML hashing.")
-            
+
+            # Ensure PEM format for EC private key
             private_key_content = private_key_content.replace("\n", "").replace("\t", "")
             if "-----BEGIN EC PRIVATE KEY-----" not in private_key_content and "-----END EC PRIVATE KEY-----" not in private_key_content:
                 private_key_content = f"-----BEGIN EC PRIVATE KEY-----\n{private_key_content}\n-----END EC PRIVATE KEY-----"
 
-            private_key = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key_content)
-            if private_key is None:
-                raise Exception("Failed to read private key.")
-            
-            signature = crypto.sign(private_key, hash_bytes, 'sha256')
+            # Load private key using cryptography
+            private_key = serialization.load_pem_private_key(
+                private_key_content.encode(),
+                password=None,
+            )
+            # Sign the hash using ECDSA with SHA256
+            signature = private_key.sign(
+                hash_bytes,
+                ec.ECDSA(hashes.SHA256())
+            )
             return base64.b64encode(signature).decode()
         except Exception as e:
             raise Exception(f"Failed to process signature: {e}")

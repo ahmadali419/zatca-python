@@ -9,15 +9,24 @@ class api_helper:
     def post_request_with_retries(url, headers, json_payload, auth=None, retries=3, backoff_factor=1):
         for attempt in range(retries):
             try:
+                print("in post request")
+
                 response = requests.post(url, headers=headers, data=json_payload, auth=auth)
-                
+                print("response is  dede :")
+                print(json.dumps(response.text, indent=2))
+                      
+                parsed = json.loads(response.text)
+                print(json.dumps(parsed, indent=2))
                 # Check for HTTP errors
                 if response.status_code != 200:
                     raise Exception(f"HTTP error: {response.status_code} - {response.text}")
-                
+
+                print("done with this")
                 return response.text
             
             except requests.exceptions.ConnectionError as e:
+                print("it is an error")
+
                 print(f"ConnectionError: {e}. Attempt {attempt + 1} of {retries}.")
                 if attempt < retries - 1:
                     time.sleep(backoff_factor * (2 ** attempt))  # Exponential backoff
@@ -39,6 +48,7 @@ class api_helper:
             'Accept-Version': 'V2',
             'Content-Type': 'application/json',
         }
+        print("opt in complaince is ",OTP)
 
         return api_helper.post_request_with_retries(url, headers, json_payload, retries=retries, backoff_factor=backoff_factor)
 

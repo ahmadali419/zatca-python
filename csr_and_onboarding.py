@@ -12,23 +12,23 @@ def main():
 
     # Define Variable
     environment_type = 'NonProduction'
-    OTP = '123456'  # For Simulation and Production Get OTP from fatooraPortal
+    OTP = '123345'  # For Simulation and Production Get OTP from fatooraPortal
 
     csr_config = {
-    "csr.common.name": "TST-886431145-399999999900003",
-    "csr.serial.number": "1-TST|2-TST|3-ed22f1d8-e6a2-1118-9b58-d9a8f11e445f",
-    "csr.organization.identifier": "399999999900003",
-    "csr.organization.unit.name": "Riyadh Branch",
-    "csr.organization.name": "Maximum Speed Tech Supply LTD",
+    "csr.common.name": "SME",
+    "csr.serial.number": "1-SME|2-SME|3-3-83f5993c-2113-434b-a66a-9b2fcc1313f3",
+    "csr.organization.identifier": "310724367700003",
+    "csr.organization.unit.name": "SME",
+    "csr.organization.name": "SME",
     "csr.country.name": "SA",
     "csr.invoice.type": "1100",
-    "csr.location.address": "RRRD2929",
-    "csr.industry.business.category": "Supply activities"
+    "csr.location.address": "Riyadh 1234 Street",
+    "csr.industry.business.category": "Technology"
     }
 
     #config_file_path = 'certificates/csr-config-example-EN.properties'
 
-    api_path = 'developer-portal'  # Default value
+    api_path = 'Simulation'  # Default value
 
     # Determine API path based on environment type
     if environment_type == 'NonProduction':
@@ -63,18 +63,19 @@ def main():
     print("\n1. Generate CSR and PrivateKey\n")
 
     #Generate CSR & Private Key
-    csr_gen = CsrGenerator(csr_config, environment_type)
-    private_key_content, csr_base64 = csr_gen.generate_csr()
+    # csr_gen = CsrGenerator(csr_config, environment_type)
+    # private_key_content, csr_base64 = csr_gen.generate_csr()
 
-    print("\nPrivate Key (without header and footer):")
-    print(private_key_content)
-    print("\nBase64 Encoded CSR:")
-    print(csr_base64)
+    # print("\nPrivate Key (without header and footer):")
+    # print(private_key_content)
+    # print("\nBase64 Encoded CSR:")
+    # print(csr_base64)
 
-    cert_info["csr"] = csr_base64
-    cert_info["privateKey"] = private_key_content
-
-    api_helper.save_json_to_file("certificates/certificateInfo.json", cert_info)
+    cert_info["csr"] = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ0hUQ0NBY1FDQVFBd056RUxNQWtHQTFVRUJoTUNVMEV4RERBS0JnTlZCQW9NQTFOTlJURU1NQW9HQTFVRQpDd3dEVTAxRk1Rd3dDZ1lEVlFRRERBTlRUVVV3VmpBUUJnY3Foa2pPUFFJQkJnVXJnUVFBQ2dOQ0FBUmdSOE00Cnl3YjdEZmlKTUVNaUI2Z1FxMmxYSCsrdGpDQ2l2MWtjS3JGR0hTRFJkUFdFRUNVT2g2TkZhT1BWU2IzVHlobWoKODEvTlQ0MnFmM3hVekJlK29JSUJMRENDQVNnR0NTcUdTSWIzRFFFSkRqR0NBUmt3Z2dFVk1Bc0dBMVVkRHdRRQpBd0lGNERDQjN3WURWUjBSQklIWE1JSFVwSUhSTUlIT01Xb3dhQVlEVlFRRURHRXhMVE14TURjeU5ETTJOemN3Ck1EQXdNM3d5TFRNdE9ETm1OVGs1TTJNdE1qRXhNeTAwTXpSaUxXRTJObUV0T1dJeVptTmpNVE14TTJZemZETXQKWldReU56RXdNV1F0WXpVMk1TMDBNakF4TFdJMk5qa3RNemt5T0RBd01tSmxaREV6TVI4d0hRWUtDWkltaVpQeQpMR1FCQVF3UE16RXdOekkwTXpZM056QXdNREF6TVEwd0N3WURWUVFNREFReE1UQXdNUnN3R1FZRFZRUWFEQkpTCmFYbGhaR2dnTVRJek5DQlRkSEpsWlhReEV6QVJCZ05WQkE4TUNsUmxZMmh1YjJ4dloza3dKQVlKS3dZQkJBR0MKTnhRQ0JCY1RGVkJTUlZwQlZFTkJMVU52WkdVdFUybG5ibWx1WnpBS0JnZ3Foa2pPUFFRREFnTkhBREJFQWlBNAp1NGZaNXB4eWJ5T0hhbFhZdkVXd2hQbmxwQXc0ZE8rWEQyTXdYKzhNbndJZ0JFNTB1UEJrYVdUU2xWUjR5SDAvClQ3OXVkRWZkTXFEWE9RZGt6NW4xam93PQotLS0tLUVORCBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0="
+    # cert_info["privateKey"] = "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIFmZyN9xXpjL2GOlm9VPHrPeH01NRIqEnmxKK9LEAjZnoAcGBSuBBAAK\noUQDQgAEbm4JB2hLi0Xpa/nKmkztf2ifKU3xgTYIULMF/d3kGxBpVIpm4WnLg2sO\nuLpGbvAjE5kZfDIaXlfhlEnWavpCDw==\n-----END EC PRIVATE KEY-----"
+    cert_info["privatekey"]="MHQCAQEEIO7xv9jGODfPVhj0/8SqVUe7RMEJD/35M9EP1bpxEnZRoAcGBSuBBAAKoUQDQgAEYEfDOMsG+w34iTBDIgeoEKtpVx/vrYwgor9ZHCqxRh0g0XT1hBAlDoejRWjj1Um908oZo/NfzU+Nqn98VMwXvg=="
+    
+    api_helper.save_json_to_file("Certificates/certificateInfo.json", cert_info)
 
     # 2. Get Compliance CSID
     print("\n2. Get Compliance CSID\n")
@@ -91,7 +92,7 @@ def main():
         cert_info["ccsid_binarySecurityToken"] = json_decoded_response["binarySecurityToken"]
         cert_info["ccsid_secret"] = json_decoded_response["secret"]
 
-        api_helper.save_json_to_file("certificates/certificateInfo.json", cert_info)
+        api_helper.save_json_to_file("Certificates/certificateInfo.json", cert_info)
 
         print("\ncomplianceCSID Server Response: \n" + clean_response)
         
@@ -101,8 +102,8 @@ def main():
     # 3: Sending Sample Documents
     print("\n3: Sending Sample Documents\n")
 
-    cert_info = api_helper.load_json_from_file("certificates/certificateInfo.json")
-    xml_template_path = "templates\invoice.xml"
+    cert_info = api_helper.load_json_from_file("Certificates/certificateInfo.json")
+    xml_template_path = r"templates/invoice.xml"
 
     private_key = cert_info["privateKey"]
     x509_certificate_content = base64.b64decode(cert_info["ccsid_binarySecurityToken"]).decode('utf-8')
@@ -189,7 +190,7 @@ def main():
         cert_info["pcsid_binarySecurityToken"] = json_decoded_response["binarySecurityToken"]
         cert_info["pcsid_secret"] = json_decoded_response["secret"]
 
-        api_helper.save_json_to_file("certificates/certificateInfo.json", cert_info)
+        api_helper.save_json_to_file("Certificates/certificateInfo.json", cert_info)
 
         print(f"Production CSID Server Response: \n{clean_response}")
 
