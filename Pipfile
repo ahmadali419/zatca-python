@@ -1,0 +1,10 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+# List your dependencies here or run `pipenv install <package>` to auto-generate
+
+[requires]
+python_version = "3.12"
