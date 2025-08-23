@@ -10,11 +10,11 @@ def main():
     print("\n3: Clearance & Reporting Documents\n")
 
     cert_info = api_helper.load_json_from_file("certificates/certificateInfo.json")
-    xml_template_path = "templates\invoices.xml"
+    xml_template_path = "templates\invoice.xml"
 
-    private_key = cert_info["privateKey"]
+    private_key = "MHQCAQEEILOqt4jRGLNykVKHtQPWms9k8MTCelBXXAaqg0DMCWZxoAcGBSuBBAAKoUQDQgAEZPY20BxBAVAyUdjjPjKpRX5fjelb5fHb92PTwwq8rTKxS/q0213hS5MGJzvrIKxEXBlV0cqs5VeU/1g+TikDdQ=="
     x509_certificate_content = base64.b64decode(cert_info["pcsid_binarySecurityToken"]).decode('utf-8')
-
+    print("x509_certificate_content",x509_certificate_content)
     parser = etree.XMLParser(remove_blank_text=False)
     base_document = etree.parse(xml_template_path, parser)
     document_types = [

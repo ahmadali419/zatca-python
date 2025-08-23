@@ -20,12 +20,11 @@ def run_clearance_reporting(file_name:str):
 
     print("Cert is ",cert_info["pcsid_binarySecurityToken"])
     # print(json.dumps(cert_info, indent=4))
-    private_key = cert_info["privateKey"]
+    private_key = "MHQCAQEEILOqt4jRGLNykVKHtQPWms9k8MTCelBXXAaqg0DMCWZxoAcGBSuBBAAKoUQDQgAEZPY20BxBAVAyUdjjPjKpRX5fjelb5fHb92PTwwq8rTKxS/q0213hS5MGJzvrIKxEXBlV0cqs5VeU/1g+TikDdQ=="
     x509_certificate_content = base64.b64decode(cert_info["pcsid_binarySecurityToken"]).decode('utf-8')
-
+    print("x509_certificate_content",x509_certificate_content)
     parser = etree.XMLParser(remove_blank_text=False)
     base_document = etree.parse(xml_template_path, parser)
-
     document_types = [
         # ["STDSI", "388", "Standard Invoice", ""],
         # ["STDCN", "383", "Standard CreditNote", "InstructionNotes for Standard CreditNote"],
@@ -38,9 +37,12 @@ def run_clearance_reporting(file_name:str):
     icv = 0
     pih = "NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ=="
 
-    for prefix, type_code, description, instruction_note in document_types:
+    for doc_type in document_types:
+        prefix, type_code, description, instruction_note = doc_type
         icv += 1
         is_simplified = prefix.startswith("SIM")
+
+        print(f"Processing {description}...\n")
 
         new_doc = invoice_helper.modify_xml(
             base_document,
@@ -51,10 +53,12 @@ def run_clearance_reporting(file_name:str):
             pih,
             instruction_note
         )
-
+        
         json_payload = einvoice_signer.get_request_api(new_doc, x509_certificate_content, private_key)
+        
+        print(json_payload)
 
-        # Decide API call
+        
         if einvoice_signer.is_simplified_invoice(new_doc):
             response = api_helper.invoice_reporting(cert_info, json_payload)
             request_type = "Reporting Api"
@@ -66,25 +70,28 @@ def run_clearance_reporting(file_name:str):
 
         clean_response = api_helper.clean_up_json(response, request_type, api_url)
 
-        try:
-            json_decoded_response = json.loads(response)
-        except json.JSONDecodeError:
-            raise Exception(f"Invalid JSON Response: {response}")
+        json_decoded_response = json.loads(response)
+
+        if json_decoded_response:
+            print(f"Reporting api Server Response: \n{clean_response}")
+        else:
+            print(f"Invalid JSON Response: \n{response}")
+            exit(1)
+
+        if response is None:
+            print(f"Failed to process {description}: serverResult is null.\n")
+            exit(1)
 
         status = json_decoded_response["reportingStatus"] if is_simplified else json_decoded_response["clearanceStatus"]
 
-        if status not in ["REPORTED", "CLEARED"]:
-            raise Exception(f"Failed to process {description}: status = {status}")
+        if "REPORTED" in status or "CLEARED" in status:
+            json_payload = json.loads(json_payload)
+            pih = json_payload["invoiceHash"]
+            print(f"\n{description} processed successfully\n\n")
+        else:
+            print(f"Failed to process {description}: status is {status}\n")
+            exit(1)
 
-        json_payload = json.loads(json_payload)
-        pih = json_payload["invoiceHash"]
-
-        results.append({
-            "document": description,
-            "status": status,
-            "server_response": clean_response
-        })
-
-        time.sleep(1)
+        time.sleep(1) 
 
     return {"success": True, "message": "Clearance & Reporting completed", "results": results}
