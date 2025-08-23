@@ -94,4 +94,4 @@ def run_clearance_reporting(file_name:str):
 
         time.sleep(1) 
 
-    return {"success": True, "message": "Clearance & Reporting completed", "results": results}
+    return {"success": True, "message": "Clearance & Reporting completed","QR":json_payload["qr_code"]}

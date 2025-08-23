@@ -265,6 +265,7 @@ class einvoice_signer:
                 "invoiceHash": base64_hash,
                 "uuid": uuid,
                 "invoice": base64_invoice,
+                "qr_code": qr_code
             }
         )
 
