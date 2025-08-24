@@ -1,0 +1,126 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+  <cbc:ProfileID>reporting:1.0</cbc:ProfileID>
+  <cbc:ID>SME01076</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>B6632E8C-6E74-431A-90AC-F44914B3B45F</cbc:UUID>
+  <cbc:IssueDate>2025-08-24</cbc:IssueDate>
+  <cbc:IssueTime>14:51:29</cbc:IssueTime>
+  <cbc:InvoiceTypeCode name="0200000">388</cbc:InvoiceTypeCode>
+  <cbc:Note languageID="ar"></cbc:Note>
+  <cbc:DocumentCurrencyCode>SAR</cbc:DocumentCurrencyCode>
+  <cbc:TaxCurrencyCode>SAR</cbc:TaxCurrencyCode>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>ICV</cbc:ID>
+    <cbc:UUID>10</cbc:UUID>
+  </cac:AdditionalDocumentReference>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>PIH</cbc:ID>
+    <cac:Attachment>
+      <cbc:EmbeddedDocumentBinaryObject mimeCode="text/plain" filename="pih.txt" characterSetCode="UTF-8">NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ==</cbc:EmbeddedDocumentBinaryObject>
+    </cac:Attachment>
+  </cac:AdditionalDocumentReference>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="CRN">1010010000</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:StreetName>Riyadh 1234 Street</cbc:StreetName>
+        <cbc:BuildingNumber>2322</cbc:BuildingNumber>
+        <cbc:CitySubdivisionName>المربع | Al-Murabba</cbc:CitySubdivisionName>
+        <cbc:CityName>الرياض | Riyadh</cbc:CityName>
+        <cbc:PostalZone>23333</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode listID="ISO3166-1:Alpha2">SA</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>300332092200003</cbc:CompanyID>
+        <cac:TaxScheme>
+          <cbc:ID schemeID="UN/ECE 5153" schemeAgencyID="6">VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>SME</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="CRN">2000020000</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:StreetName>Riyadh 1234 Street</cbc:StreetName>
+        <cbc:BuildingNumber>1111</cbc:BuildingNumber>
+        <cbc:CitySubdivisionName>المروج | Al-Murooj</cbc:CitySubdivisionName>
+        <cbc:CityName>الرياض | Riyadh</cbc:CityName>
+        <cbc:PostalZone>12222</cbc:PostalZone>
+        <cac:Country>
+          <cbc:IdentificationCode listID="ISO3166-1:Alpha2">SA</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>310724367700003</cbc:CompanyID>
+        <cac:TaxScheme>
+          <cbc:ID schemeID="UN/ECE 5153" schemeAgencyID="6">VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>SME</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:Delivery>
+    <cbc:ActualDeliveryDate>2022-09-07</cbc:ActualDeliveryDate>
+  </cac:Delivery>
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>10</cbc:PaymentMeansCode>
+  </cac:PaymentMeans>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="SAR">48</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="SAR">320</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="SAR">48</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID schemeID="UN/ECE 5305" schemeAgencyID="6">S</cbc:ID>
+        <cbc:Percent>15.0</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID schemeID="UN/ECE 5153" schemeAgencyID="6">VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="SAR">320</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="SAR">320</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="SAR">368</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="SAR">0</cbc:AllowanceTotalAmount>
+    <cbc:PrepaidAmount currencyID="SAR">0</cbc:PrepaidAmount>
+    <cbc:PayableAmount currencyID="SAR">368</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="PCE">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="SAR">320</cbc:LineExtensionAmount>
+    <cac:AllowanceCharge>
+      <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+      <cbc:AllowanceChargeReason>discount</cbc:AllowanceChargeReason>
+      <cbc:Amount currencyID="SAR">0</cbc:Amount>
+    </cac:AllowanceCharge>
+    <cac:Item>
+      <cbc:Name>ADAPTER POWER 65W SURFACE PRO#WP@7 -W8Y00009</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID schemeID="UN/ECE 5305" schemeAgencyID="6">S</cbc:ID>
+        <cbc:Percent>15.0</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID schemeID="UN/ECE 5153" schemeAgencyID="6">VAT</cbc:ID>
+        </cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="SAR">320.0</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>
