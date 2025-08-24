@@ -4,7 +4,10 @@ from app.clearance_reporting import run_clearance_reporting
 from app.create_invoice import create_invoice_xml
 from pydantic import BaseModel
 from typing import Dict
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -24,10 +27,14 @@ def onboarding(request: CSRRequest):
 
 
 @app.post("/reporting")
-def onboarding(request: ReportingRequest):    
-    file_path = f"templates/{request.invoice_id}-invoice.xml"
-    create_invoice_xml(request.invoice_data, file_path)
-    return run_clearance_reporting(file_path)
+def reporting(request: ReportingRequest):
+    try:
+        file_path = f"/tmp/{request.invoice_id}-invoice.xml"  # ✅ use /tmp on Vercel
+        create_invoice_xml(request.invoice_data, file_path)
+        return run_clearance_reporting(file_path)
+    except Exception as e:
+        logger.exception("Error in /reporting")
+        return {"error": str(e)}
 
 @app.get("/")
 def hello():
