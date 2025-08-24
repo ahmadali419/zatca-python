@@ -113,7 +113,7 @@ def create_invoice_xml(data: dict, output_path):
     # Document-level AllowanceCharge
     if data.get("AllowanceCharge"):
         ac = make_element("cac:AllowanceCharge", parent=invoice)
-        make_element("cbc:ChargeIndicator", str(data["AllowanceCharge"]["ChargeIndicator"]).lower(), ac)
+        make_element("cbc:ChargeIndicator", str(data.get("AllowanceCharge", {}).get("ChargeIndicator") or "false").lower(), ac)
         make_element("cbc:AllowanceChargeReason", data["AllowanceCharge"]["Reason"], ac)
         make_element("cbc:Amount", data["AllowanceCharge"]["Amount"], ac, currencyID=data["DocumentCurrencyCode"])
         for tc in data["AllowanceCharge"].get("TaxCategories", []):
@@ -154,7 +154,7 @@ def create_invoice_xml(data: dict, output_path):
 
         if line.get("AllowanceCharge"):
             lac = make_element("cac:AllowanceCharge", parent=il)
-            make_element("cbc:ChargeIndicator", str(line["AllowanceCharge"]["ChargeIndicator"]).lower(), lac)
+            make_element("cbc:ChargeIndicator", str(line.get("AllowanceCharge", {}).get("ChargeIndicator") or "false").lower(), lac)
             make_element("cbc:AllowanceChargeReason", line["AllowanceCharge"]["Reason"], lac)
             make_element("cbc:Amount", line["AllowanceCharge"]["Amount"], lac, currencyID=data["DocumentCurrencyCode"])
 
