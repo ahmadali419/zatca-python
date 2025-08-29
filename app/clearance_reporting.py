@@ -20,7 +20,7 @@ def run_clearance_reporting(file_name:str):
 
     print("Cert is ",cert_info["pcsid_binarySecurityToken"])
     # print(json.dumps(cert_info, indent=4))
-    private_key = "MHQCAQEEILOqt4jRGLNykVKHtQPWms9k8MTCelBXXAaqg0DMCWZxoAcGBSuBBAAKoUQDQgAEZPY20BxBAVAyUdjjPjKpRX5fjelb5fHb92PTwwq8rTKxS/q0213hS5MGJzvrIKxEXBlV0cqs5VeU/1g+TikDdQ=="
+    private_key = "MHQCAQEEICYPD0DNslvNdYZ+Sc8dF+edmopurYCTV4In3H+m+eMIoAcGBSuBBAAKoUQDQgAE2x+Ax9qVd4iz9Gcz9szpHbso+Tzjbhr6qbjx2ipdy01/mEcXbwgnyg8qj3BCC4OrUofApdNR3zm7ff96aP9Gdg=="
     x509_certificate_content = base64.b64decode(cert_info["pcsid_binarySecurityToken"]).decode('utf-8')
     print("x509_certificate_content",x509_certificate_content)
     parser = etree.XMLParser(remove_blank_text=False)

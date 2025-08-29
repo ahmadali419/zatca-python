@@ -47,49 +47,14 @@ class einvoice_signer:
             xml, x509_certificate_content, private_key_content
         )
 
-    # @staticmethod
-    # def get_request_api(xml, x509_certificate_content, private_key_content):
-    #     """Main function to process the invoice request."""
-    #     # Define resource file paths
-    #     resource_paths = {
-    #         "xsl_file": 'resources/xslfile.xsl',
-    #         "ubl_template": 'resources/zatca_ubl.xml',
-    #         "signature": 'resources/zatca_signature.xml'
-    #     }
-
-    #     xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
-
-    #     # Extract UUID from XML
-    #     uuid = einvoice_signer.extract_uuid(xml)
-
-    #     # Determine if the invoice is simplified
-    #     is_simplified_invoice = einvoice_signer.is_simplified_invoice(xml)
-
-    #     # Transform the XML using XSLT
-    #     transformed_xml = einvoice_signer.transform_xml(xml, resource_paths["xsl_file"])
-
-    #     # Canonicalize the transformed XML
-    #     canonical_xml = einvoice_signer.canonicalize_xml(transformed_xml)
-
-    #     # Generate the hash and encode the invoice
-    #     base64_hash = einvoice_signer.generate_base64_hash(canonical_xml)
-    #     base64_invoice = einvoice_signer.encode_invoice(xml_declaration, canonical_xml)
-
-    #     # Prepare the result for non-simplified invoices
-    #     if not is_simplified_invoice:
-    #         return einvoice_signer.create_result(uuid, base64_hash, base64_invoice)
-
-    #     # Sign the simplified invoice
-    #     return einvoice_signer.sign_simplified_invoice(canonical_xml, base64_hash, x509_certificate_content, private_key_content, resource_paths["ubl_template"], resource_paths["signature"], uuid)
-
     @staticmethod
     def get_request_api(xml, x509_certificate_content, private_key_content):
         """Main function to process the invoice request."""
         # Define resource file paths
         resource_paths = {
-            "xsl_file": "resources/xslfile.xsl",
-            "ubl_template": "resources/zatca_ubl.xml",
-            "signature": "resources/zatca_signature.xml",
+            "xsl_file": 'resources/xslfile.xsl',
+            "ubl_template": 'resources/zatca_ubl.xml',
+            "signature": 'resources/zatca_signature.xml'
         }
 
         xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
@@ -105,7 +70,6 @@ class einvoice_signer:
 
         # Canonicalize the transformed XML
         canonical_xml = einvoice_signer.canonicalize_xml(transformed_xml)
-        # print (canonical_xml)
 
         # Generate the hash and encode the invoice
         base64_hash = einvoice_signer.generate_base64_hash(canonical_xml)
@@ -116,15 +80,51 @@ class einvoice_signer:
             return einvoice_signer.create_result(uuid, base64_hash, base64_invoice)
 
         # Sign the simplified invoice
-        return einvoice_signer.sign_simplified_invoice(
-            canonical_xml,
-            base64_hash,
-            x509_certificate_content,
-            private_key_content,
-            resource_paths["ubl_template"],
-            resource_paths["signature"],
-            uuid,
-        )
+        return einvoice_signer.sign_simplified_invoice(canonical_xml, base64_hash, x509_certificate_content, private_key_content, resource_paths["ubl_template"], resource_paths["signature"], uuid)
+
+    # @staticmethod
+    # def get_request_api(xml, x509_certificate_content, private_key_content):
+    #     """Main function to process the invoice request."""
+    #     # Define resource file paths
+    #     resource_paths = {
+    #         "xsl_file": "resources/xslfile.xsl",
+    #         "ubl_template": "resources/zatca_ubl.xml",
+    #         "signature": "resources/zatca_signature.xml",
+    #     }
+
+    #     xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
+
+    #     # Extract UUID from XML
+    #     uuid = einvoice_signer.extract_uuid(xml)
+
+    #     # Determine if the invoice is simplified
+    #     is_simplified_invoice = einvoice_signer.is_simplified_invoice(xml)
+
+    #     # Transform the XML using XSLT
+    #     transformed_xml = einvoice_signer.transform_xml(xml, resource_paths["xsl_file"])
+
+    #     # Canonicalize the transformed XML
+    #     canonical_xml = einvoice_signer.canonicalize_xml(transformed_xml)
+    #     # print (canonical_xml)
+
+    #     # Generate the hash and encode the invoice
+    #     base64_hash = einvoice_signer.generate_base64_hash(canonical_xml)
+    #     base64_invoice = einvoice_signer.encode_invoice(xml_declaration, canonical_xml)
+
+    #     # Prepare the result for non-simplified invoices
+    #     if not is_simplified_invoice:
+    #         return einvoice_signer.create_result(uuid, base64_hash, base64_invoice)
+
+    #     # Sign the simplified invoice
+    #     return einvoice_signer.sign_simplified_invoice(
+    #         canonical_xml,
+    #         base64_hash,
+    #         x509_certificate_content,
+    #         private_key_content,
+    #         resource_paths["ubl_template"],
+    #         resource_paths["signature"],
+    #         uuid,
+    #     )
 
     @staticmethod
     def extract_uuid(xml):
@@ -516,3 +516,4 @@ class einvoice_signer:
         finally:
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
+ 
