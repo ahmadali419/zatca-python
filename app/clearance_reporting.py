@@ -23,6 +23,7 @@ def run_clearance_reporting(file_name:str,user_id:str):
     print("Cert is ",cert_info["pcsid_binarySecurityToken"])
     # print(json.dumps(cert_info, indent=4))
     private_key = cert_info["privateKey"]
+    x509_certificate_content = base64.b64decode(cert_info["pcsid_binarySecurityToken"]).decode('utf-8')
     print("x509_certificate_content",x509_certificate_content)
     parser = etree.XMLParser(remove_blank_text=False)
     base_document = etree.parse(xml_template_path, parser)

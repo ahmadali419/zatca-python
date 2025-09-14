@@ -19,7 +19,7 @@ class CSRRequest(BaseModel):
 
 class ReportingRequest(BaseModel):
     invoice_id:str
-    user_i:str
+    user_id:str
     invoice_data:dict
 
 @app.post("/onboarding")
