@@ -19,6 +19,7 @@ class CSRRequest(BaseModel):
 
 class ReportingRequest(BaseModel):
     invoice_id:str
+    user_i:str
     invoice_data:dict
 
 @app.post("/onboarding")
@@ -31,7 +32,7 @@ def reporting(request: ReportingRequest):
     try:
         file_path = f"/tmp/{request.invoice_id}-invoice.xml"  # ✅ use /tmp on Vercel
         create_invoice_xml(request.invoice_data, file_path)
-        return run_clearance_reporting(file_path)
+        return run_clearance_reporting(file_path,request.user_id)
     except Exception as e:
         logger.exception("Error in /reporting")
         return {"error": str(e)}

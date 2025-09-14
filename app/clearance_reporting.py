@@ -8,20 +8,21 @@ from utilities.einvoice_signer import einvoice_signer
 from lxml import etree 
 
 
-def run_clearance_reporting(file_name:str):
+def run_clearance_reporting(file_name:str,user_id:str):
     """
     Executes Clearance & Reporting for invoices.
     """
 
     results = []
 
-    cert_info = api_helper.load_json_from_file("Certificates/certificateInfo.json")
+    cert_file = f"Certificates/{user_id}-certificateInfo.json"
+
+    cert_info = api_helper.load_json_from_file(cert_file)
     xml_template_path = file_name
 
     print("Cert is ",cert_info["pcsid_binarySecurityToken"])
     # print(json.dumps(cert_info, indent=4))
-    private_key = "MHQCAQEEICYPD0DNslvNdYZ+Sc8dF+edmopurYCTV4In3H+m+eMIoAcGBSuBBAAKoUQDQgAE2x+Ax9qVd4iz9Gcz9szpHbso+Tzjbhr6qbjx2ipdy01/mEcXbwgnyg8qj3BCC4OrUofApdNR3zm7ff96aP9Gdg=="
-    x509_certificate_content = base64.b64decode(cert_info["pcsid_binarySecurityToken"]).decode('utf-8')
+    private_key = cert_info["privateKey"]
     print("x509_certificate_content",x509_certificate_content)
     parser = etree.XMLParser(remove_blank_text=False)
     base_document = etree.parse(xml_template_path, parser)
