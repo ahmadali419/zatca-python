@@ -103,7 +103,9 @@ class api_helper:
             'Accept-Version': 'V2',
             'Content-Type': 'application/json',
         }
-
+        print("json",json_payload)
+        print("url",url)
+        print("id_token",id_token)
         auth = HTTPBasicAuth(id_token, secret)
         return api_helper.post_request_with_retries(url, headers, json_payload, auth=auth, retries=retries, backoff_factor=backoff_factor)
 

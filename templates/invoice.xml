@@ -3,7 +3,7 @@
 	<cbc:ProfileID>reporting:1.0</cbc:ProfileID>
 	<cbc:ID>SME00010</cbc:ID>
 	<cbc:UUID>7c2efdaf-5721-4635-8dd1-433509df4a3b</cbc:UUID>
-	<cbc:IssueDate>2025-08-23</cbc:IssueDate>
+	<cbc:IssueDate>2026-02-15</cbc:IssueDate>
 	<cbc:IssueTime>17:41:08</cbc:IssueTime>
 	<cbc:InvoiceTypeCode name="0200000">388</cbc:InvoiceTypeCode>
 	<cbc:Note languageID="ar">ABC</cbc:Note>
@@ -40,7 +40,7 @@
 				</cac:Country>
 			</cac:PostalAddress>
 			<cac:PartyTaxScheme>
-				<cbc:CompanyID>300332092200003</cbc:CompanyID>
+				<cbc:CompanyID>312332881200003</cbc:CompanyID>
 				<cac:TaxScheme>
 					<cbc:ID>VAT</cbc:ID>
 				</cac:TaxScheme>
